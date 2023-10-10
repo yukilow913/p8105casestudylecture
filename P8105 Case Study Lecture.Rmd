@@ -1,0 +1,117 @@
+```{r}
+library(p8105.datasets)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+data(nyc_airbnb)
+
+nyc_airbnb <- 
+  nyc_airbnb %>%
+  rename (borough = neighbourhood_group) %>% 
+  mutate(stars = review_scores_location/2)
+
+nyc_airbnb
+```
+
+##Brainstorm questions 
+- Where are AirBNBs expensive?
+  - Borough? Neighborhood? 
+  - Do other factors (room type) affect price? What about rating?
+- How long are AirBNBs active?
+  - Are AirBNBs illegal and do they get shut down?
+- Which units have the most availability?
+- How is review score impacted by location?
+- How many apartments are run by one host? 
+  - Does that affect price? 
+  - Does that vary by neighborhood?
+- Where are AirBNBs?
+  - Borough? Neighborhood? 
+  - Lat and long? 
+  
+```{r}
+nyc_airbnb %>% 
+  group_by(borough) %>% 
+  summarise(average = mean(price)) %>% 
+  arrange(desc(average))
+
+nyc_airbnb %>% 
+  group_by(neighbourhood) %>% 
+  summarise(average = mean(price)) %>% 
+  arrange(desc(average))
+
+nyc_airbnb %>% 
+  group_by(stars) %>% 
+  summarise(average = mean(price)) %>% 
+  arrange(desc(average))
+
+min_nights_df <- nyc_airbnb %>% 
+  group_by(minimum_nights) %>% 
+  summarise(average = mean(price)) %>% 
+  arrange(minimum_nights) %>% 
+  filter(minimum_nights <= 50)
+
+ggplot(min_nights_df, aes(x = minimum_nights, y= average)) + 
+  geom_bar(stat= "identity")
+
+host_listings_df <- nyc_airbnb %>% 
+  group_by(calculated_host_listings_count) %>% 
+  summarise(average = mean(price)) %>% 
+  arrange(calculated_host_listings_count) 
+
+ggplot(host_listings_df, aes(x = calculated_host_listings_count, y= average)) + 
+  geom_bar(stat= "identity")
+```
+
+```{r}
+nyc_airbnb %>% 
+  count(borough) %>% 
+  arrange(desc(n))
+```
+
+```{r}
+nyc_airbnb %>% 
+  group_by(borough, neighbourhood) %>% 
+  summarise(mean_price = mean(price)) %>% 
+  arrange(desc(mean_price))
+```
+
+```{r}
+nyc_airbnb %>% 
+  group_by(borough, neighbourhood) %>% 
+  summarise(median_price = median(price)) %>% 
+  arrange(desc(median_price))
+```
+
+```{r}
+nyc_airbnb %>% 
+  group_by(borough, room_type) %>% 
+  summarise(mean_price = mean(price)) %>% 
+  arrange(desc(mean_price)) %>%
+  pivot_wider(
+    names_from = room_type, 
+    values_from = mean_price
+  )
+```
+
+```{r}
+nyc_airbnb %>% 
+  filter(price <1000, room_type == "Entire home/apt") %>%
+  ggplot(aes(x = price)) + 
+  geom_histogram() + 
+  facet_grid(. ~borough)
+```
+
+```{r}
+nyc_airbnb %>% 
+  filter(
+    price < 1000, 
+    room_type == "Entire home/apt", 
+    borough == "Manhattan") %>% 
+  group_by(neighbourhood) %>% 
+  summarise(
+    n_apt = n(), 
+    mean_price = mean(price)) %>% 
+  arrange(desc(mean_price)) 
+
+```
